@@ -52,6 +52,29 @@ When you decide to stop, give a final summary:
 - Brief assessment: did results generalize well (public vs private gap)?
 - Suggestion for what the user could try next
 
+## Dashboard
+
+Before presenting the final summary, generate an interactive HTML dashboard:
+
+```bash
+python src/dashboard.py --output dashboard.html
+```
+
+This produces a self-contained `dashboard.html` with:
+- **Leaderboard** — directions ranked by best score
+- **Score progression** — how the cumulative best improved over time
+- **Generalization scatter** — public vs. private score per direction (if private scores exist)
+- **Per-direction breakdown** — score distribution within each direction
+
+Open the dashboard in the user's browser:
+
+```bash
+open dashboard.html        # macOS
+xdg-open dashboard.html    # Linux
+```
+
+Share the file path with the user so they can revisit it later.
+
 ## When to Stop
 
 Use your judgment. If public validation improves while private validation worsens across directions, flag it to the user. Do not launch more than 6 total directions unless the user explicitly asks for more.
