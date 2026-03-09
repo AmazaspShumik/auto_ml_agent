@@ -1,0 +1,23 @@
+artifact_path: /Users/amazaspshaumyan/Desktop/auto-ml-eng/automated_ml_science_team/mlruns/3/models/m-deecb4ce80a648baaf5b2b9cec9ddb61/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.11.8
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.10.0
+mlflow_version: 3.10.1
+model_id: m-deecb4ce80a648baaf5b2b9cec9ddb61
+model_size_bytes: 2206784
+model_uuid: m-deecb4ce80a648baaf5b2b9cec9ddb61
+prompts: null
+run_id: 15785428fb614787bf9bd3ea9bbd3c12
+utc_time_created: '2026-03-09 15:31:36.280752'
