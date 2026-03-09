@@ -1,0 +1,23 @@
+artifact_path: /Users/amazaspshaumyan/Desktop/auto-ml-eng/automated_ml_science_team/mlruns/1/models/m-2a56f5a61f554e6587fcf75b8d961079/artifacts
+flavors:
+  lightgbm:
+    code: null
+    data: model.lgb
+    lgb_version: 4.6.0
+    model_class: lightgbm.basic.Booster
+    serialization_format: cloudpickle
+    skops_trusted_types: null
+  python_function:
+    data: model.lgb
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.lightgbm
+    python_version: 3.11.8
+mlflow_version: 3.10.1
+model_id: m-2a56f5a61f554e6587fcf75b8d961079
+model_size_bytes: 7655
+model_uuid: m-2a56f5a61f554e6587fcf75b8d961079
+prompts: null
+run_id: ca5a63f65d714312bec6bbd7e8d3be00
+utc_time_created: '2026-03-09 12:12:47.857728'
