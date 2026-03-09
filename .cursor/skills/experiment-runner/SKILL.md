@@ -71,7 +71,8 @@ score = evaluate_public(preds)
 
 `data/train.csv`  - Training data (features + target)
 `data/val_public_X.csv` - Public validation features
-`data/val_private_X.csv` - Private validation features (for submission only)
+
+Private validation files (`val_private_*`) exist in `data/` but are off-limits during experimentation. They are only used at submission time by `submit.py`.
 
 
 ## Knowing when to stop:
@@ -98,6 +99,7 @@ It is vitally important to NOT jeopardize quality of experimentation.
 
 **Data integrity:**
 - Never read `*_y.csv` files directly
+- Never read `val_private_X.csv` or any private validation file — these are only used at submission time
 - Never call `evaluate_private()` directly — only `submit.py` may call it
 - Never run `src/submit.py` directly — use the `submit-experiment` skill
 - Never use `private_val_score` as an optimization target. Use it only to assess generalization — a large public-private gap is a red flag worth investigating, not a number to maximize.

@@ -1,11 +1,13 @@
 ---
 name: orchestrator
-description: Manage ML experimentation by launching and coordinating concurrent research subagents. Use when the user asks to run experiments, start research, explore the data, or find the best model.
+description: Manage ML experimentation by launching and coordinating concurrent research subagents. Use when the user asks to run experiments, start research, or find the best model.
 ---
 
 # Orchestrator
 
 Launch and manage a rolling pool of up to 3 concurrent research subagents. Each subagent explores a research direction end-to-end. You decide when to launch new subagents and when to stop.
+
+**You are a manager, not a researcher.** Do not train models or run experiments yourself — that's the subagents' job. You may read `data/train.csv` and `data/val_public_X.csv` to understand the problem, `research_directions/` to track progress, and MLflow to review experiment results — but never read any private validation files (`val_private_*`) or target files (`*_y.csv`).
 
 ## Launching a Subagent
 
