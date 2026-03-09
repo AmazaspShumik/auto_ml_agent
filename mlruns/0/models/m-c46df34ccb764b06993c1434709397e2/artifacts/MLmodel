@@ -1,0 +1,22 @@
+artifact_path: /Users/amazaspshaumyan/Desktop/auto-ml-eng/automated_ml_science_team/mlruns/0/models/m-c46df34ccb764b06993c1434709397e2/artifacts
+flavors:
+  python_function:
+    data: model.ubj
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.xgboost
+    python_version: 3.11.8
+  xgboost:
+    code: null
+    data: model.ubj
+    model_class: xgboost.sklearn.XGBClassifier
+    model_format: ubj
+    xgb_version: 3.2.0
+mlflow_version: 3.10.1
+model_id: m-c46df34ccb764b06993c1434709397e2
+model_size_bytes: 13707221
+model_uuid: m-c46df34ccb764b06993c1434709397e2
+prompts: null
+run_id: 381076280ed84cc6a2145f4fd8188c87
+utc_time_created: '2026-03-09 11:55:11.029769'

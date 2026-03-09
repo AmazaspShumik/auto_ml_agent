@@ -1,0 +1,22 @@
+artifact_path: /Users/amazaspshaumyan/Desktop/auto-ml-eng/automated_ml_science_team/mlruns/0/models/m-dd9d73e7099b491fb215cfbced683391/artifacts
+flavors:
+  catboost:
+    catboost_version: 1.2.10
+    code: null
+    data: model.cb
+    model_type: CatBoostClassifier
+    save_format: cbm
+  python_function:
+    data: model.cb
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.catboost
+    python_version: 3.11.8
+mlflow_version: 3.10.1
+model_id: m-dd9d73e7099b491fb215cfbced683391
+model_size_bytes: 1130912
+model_uuid: m-dd9d73e7099b491fb215cfbced683391
+prompts: null
+run_id: 648efb04a5b346a5af2c76e6e98ee66a
+utc_time_created: '2026-03-09 11:59:29.817123'
