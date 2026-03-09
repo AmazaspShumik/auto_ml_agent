@@ -2,6 +2,8 @@
 
 A template for autonomous ML experimentation using Cursor AI agents. Small agent swarm explore different research directions concurrently, log everything to MLflow, and communicate findings through a shared knowledge base on `main`.
 
+> **Blog post:** [ML Environment Engineering: Building Machines That Build Machines](https://amazaspshumik.github.io/thoughts/ml-environment-engineering.html) — the thinking behind this project.
+
 ## How It Works
 
 ```
@@ -98,6 +100,10 @@ Without this split, there's no way to detect if the agent's improvements are rea
 
 ## Project Structure
 
+The repo has two layers: the **harness** (files you write once before running) and **agent output** (created at runtime).
+
+### Harness (template)
+
 ```
 .cursor/skills/
   orchestrator/SKILL.md       # Launches and manages research subagents
@@ -115,11 +121,23 @@ data/
   val_public_y.csv            # Public validation targets
   val_private_X.csv           # Private validation features
   val_private_y.csv           # Private validation targets
-
-research_directions/          # Inter-agent communication (one file per direction)
-mlruns/                       # MLflow model artifacts (saved models, blend configs)
-mlflow.db                     # MLflow run metadata: metrics, params, tags (SQLite, created at runtime)
 ```
+
+### Agent output (generated at runtime)
+
+```
+research_directions/          # One file per direction — intent, results, and learnings
+  ├── catboost-tuning.md
+  ├── lightgbm-hyperparam-tuning.md
+  ├── ensemble-blending.md
+  └── ...
+
+mlruns/                       # MLflow model artifacts (saved models, blend configs)
+mlflow.db                     # MLflow run metadata: metrics, params, tags (SQLite)
+dashboard.html                # Interactive results dashboard
+```
+
+Browse [`research_directions/`](research_directions/) to see what the agents explored, what worked, what didn't, and why. Each file captures the full arc of a research direction — from initial rationale through final learnings — and serves as the primary interface between agents.
 
 ## Getting Started
 
@@ -194,4 +212,4 @@ A `src/shared/` directory on `main` could solve this. Agents would be allowed to
 
 ---
 
-P.S. WHile I was working on this Karpathy published autoresearch: https://x.com/karpathy/status/2030371219518931079 
+P.S. WHile I was working on this Karpathy published autoresearch: https://x.com/karpathy/status/2030371219518931079 !!!
