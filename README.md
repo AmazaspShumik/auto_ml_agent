@@ -26,7 +26,7 @@ A template for autonomous ML experimentation using Cursor AI agents. Multiple ag
 
 ### The orchestrator launches research agents
 
-- The **orchestrator** (main agent) manages a rolling pool of up to 3 concurrent subagents
+- The **orchestrator** (main agent) manages a rolling pool of up to 3 concurrent subagents (3 here is just arbitatry constraint)
 - Each **subagent** picks a research direction, experiments freely, logs everything to MLflow, and submits results back to `main`
 - Between completions, the orchestrator reports progress to the user and decides whether to launch more agents
 
@@ -43,11 +43,42 @@ A template for autonomous ML experimentation using Cursor AI agents. Multiple ag
 - Private evaluation scores are logged to the best run from each direction
 - View all results at `localhost:5000` by running `mlflow ui`
 
+### Human in the loop
+
+The system is autonomous but not a black box. After each direction completes, the orchestrator reports results and asks if you want to steer:
+
+- **Let it run** — agents continue choosing directions autonomously
+- **Suggest a direction** — tell the orchestrator what to try next ("ensemble the top two models", "try a neural net approach") and it launches a subagent with your guidance
+- **Stop** — halt experimentation and get a final summary
+
+You can also inspect progress at any time via `mlflow ui` or by reading the `research_directions/` files. The agents work for you, not instead of you.
+
 ### Only results merge to main
 
 - Training code stays on the branch — it's disposable
 - Only `mlruns/` and `research_directions/` merge to `main`
 - Branches are never deleted — they serve as archives
+
+## Evaluation Design: Public/Private Split
+
+The validation data is split into two sets with targets (`*_y.csv`) separated from features (`*_X.csv`):
+
+- **Public validation** — agents use this freely during experimentation. `evaluate_public()` scores predictions against `val_public_y.csv` and the result (`public_val_score`) drives all experiment decisions.
+- **Private validation** — scored only once per direction at submission time via `submit.py`. The agent never reads `val_private_y.csv` directly.
+
+### Why separate targets from features?
+
+Agents have file system access. If targets lived in the same CSV as features, nothing would prevent an agent from reading the answer column (and in some experiments, where user is emphasizing importance of the task and puts pressure - agents do that!). Isolating `*_y.csv` files and enforcing "never read them directly" as a safety rule in skills creates a clear boundary — the agent works with features, the evaluation scripts work with targets. In some way this setup is very similar to Kaggle.
+
+### Why two validation sets?
+
+This mirrors the Kaggle public/private leaderboard design:
+
+- **Public scores are visible during research** — agents use them to compare approaches, tune hyperparameters, and decide what to try next
+- **Private scores reveal generalization** — computed once at submission, they show whether the public score was trustworthy or the agent overfit the public split
+- **A large gap between public and private scores is a red flag** — it signals overfitting to the public validation set, which is the primary failure mode when an autonomous agent optimizes iteratively
+
+Without this split, there's no way to detect if the agent's improvements are real or if it's just memorizing the validation set through repeated evaluation.
 
 ## Project Structure
 
@@ -91,13 +122,7 @@ Replace the files in `data/` with your own dataset:
 - `val_public_X.csv` / `val_public_y.csv` — public validation split
 - `val_private_X.csv` / `val_private_y.csv` — private validation split (held out)
 
-### 3. Set the private evaluation token
-
-```bash
-export PRIVATE_EVAL_GATE_TOKEN="your-secret-token"
-```
-
-### 4. Start experimenting
+### 3. Start experimenting
 
 Open the project in Cursor and tell the agent:
 
@@ -109,7 +134,7 @@ The orchestrator skill activates, launches subagents, and manages the research p
 
 Or run a single direction manually — the experiment-runner skill guides any agent through the full workflow.
 
-### 5. View results
+### 4. View results
 
 ```bash
 mlflow ui
@@ -120,6 +145,6 @@ Open `localhost:5000` to see all runs, compare metrics, and inspect training cur
 ## Safety Rules
 
 - Agents never read `*_y.csv` target files directly
-- Private evaluation requires a gate token and runs only through `submit.py`
+- Private evaluation runs only through `submit.py`
 - `private_val_score` is visible but cannot be used as an optimization target — only as a generalization check
 - Bad runs are always logged — deleting failures is prohibited

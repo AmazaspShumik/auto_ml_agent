@@ -2,13 +2,11 @@
 Private evaluation: score predictions against private targets and log to MLflow.
 
 Usage:
-    PRIVATE_EVAL_GATE_TOKEN=<token> python src/submit.py \
-        predictions.csv <mlflow_run_id>
+    python src/submit.py predictions.csv <mlflow_run_id>
 """
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -29,17 +27,12 @@ def main() -> None:
     preds_path = Path(sys.argv[1])
     run_id = sys.argv[2]
 
-    gate_token = os.environ.get("PRIVATE_EVAL_GATE_TOKEN", "")
-    if not gate_token:
-        print("FAILED: PRIVATE_EVAL_GATE_TOKEN environment variable not set.")
-        sys.exit(1)
-
     if not preds_path.exists():
         print(f"FAILED: predictions file not found: {preds_path}")
         sys.exit(1)
 
     preds = pd.read_csv(preds_path).squeeze("columns").values
-    private_score = _evaluate_private(preds, gate_token)
+    private_score = _evaluate_private(preds)
 
     with mlflow.start_run(run_id=run_id):
         mlflow.log_metric("private_val_score", private_score)
@@ -47,10 +40,7 @@ def main() -> None:
     print(f"SUBMITTED: private_val_score logged to MLflow run {run_id}.")
 
 
-def _evaluate_private(preds: np.ndarray, gate_token: str) -> float:
-    expected = os.environ.get("PRIVATE_EVAL_GATE_TOKEN", "")
-    if not expected or gate_token != expected:
-        raise PermissionError("Invalid gate token.")
+def _evaluate_private(preds: np.ndarray) -> float:
     y_true = pd.read_csv(DATA_DIR / "val_private_y.csv")["target"].values
     preds = np.asarray(preds, dtype=float)
     if preds.shape[0] != y_true.shape[0]:

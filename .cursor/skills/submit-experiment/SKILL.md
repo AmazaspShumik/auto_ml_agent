@@ -20,8 +20,7 @@ Finalize a research direction: run private evaluation on your best candidate, lo
 3. Run private evaluation — `submit.py` evaluates against private targets and logs `private_val_score` to the best MLflow run:
 
 ```bash
-PRIVATE_EVAL_GATE_TOKEN=$PRIVATE_EVAL_GATE_TOKEN python src/submit.py \
-    predictions_private.csv <mlflow_run_id>
+python src/submit.py predictions_private.csv <mlflow_run_id>
 ```
 
 4. Switch to main and merge results:
