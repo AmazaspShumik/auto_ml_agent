@@ -9,7 +9,7 @@ Explore a research direction through one or more MLflow runs. You have full free
 
 ## Before You Start
 
-1. **Pull latest and review prior work** — `git pull`, then read all files in `research_directions/` to see what other agents have explored, what's in progress, and what was learned. Pay attention to the Learnings sections — they contain insights you should build on, not repeat.
+1. **Review prior work** — read all files in `research_directions/` to see what other agents have explored, what's in progress, and what was learned. Pay attention to the Learnings sections — they contain insights you should build on, not repeat.
 2. **Create your branch** — branch off main so all exploratory work stays off main.
 3. **Choose a direction** that complements prior work — don't repeat what's been done. Use your judgment on what preparation you need: EDA, web research, reading papers — whatever helps you make a well-informed choice.
 4. **Switch to main and register your direction** — create `research_directions/<your-direction-name>.md` with status `in_progress`:
@@ -32,20 +32,20 @@ Explore a research direction through one or more MLflow runs. You have full free
 (filled on completion by submit-experiment)
 ```
 
-5. Commit, push to main, then switch back to your branch and start experimenting.
+5. Commit on main, then switch back to your branch and start experimenting.
 
 Registering your direction on main before experiments begin is critical — it signals your intent to other concurrent agents.
 
 ## MLflow Tracking URI
 
-All agents must use the SQLite backend. Set this **before any MLflow calls** in every script:
+All agents must use the tracking server started by the orchestrator. Set this **before any MLflow calls** in every script:
 
 ```python
 import mlflow
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
 ```
 
-The path is relative to the project root — make sure your working directory is the project root when running experiments. The orchestrator creates `mlflow.db` before launching subagents, so it will already exist.
+The server serializes writes to the SQLite database — never connect to `sqlite:///mlflow.db` directly, or you'll hit "database is locked" errors from concurrent agents.
 
 The SQLite database is the source of truth for run metadata (metrics, params, tags). MLflow still writes model artifacts to `mlruns/` on disk — that directory must be preserved and merged to main via the submit-experiment workflow.
 

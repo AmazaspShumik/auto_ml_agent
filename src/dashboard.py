@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import os
 from pathlib import Path
 
 import mlflow
@@ -245,6 +246,9 @@ def _build_direction_breakdown(runs: list[dict]) -> go.Figure:
 
 
 def _get_tracking_uri() -> str:
+    uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if uri:
+        return uri
     db_path = PROJECT_ROOT / "mlflow.db"
     if not db_path.exists():
         raise FileNotFoundError(

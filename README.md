@@ -51,7 +51,13 @@ A template for autonomous ML experimentation using Cursor AI agents. Small agent
 - Every run logs hyperparameters, per-step training/validation metrics, and the trained model as an artifact
 - Each run has a `direction_rationale` (why this approach), `run_rationale` (why this config), and `run_analysis` (what happened and why)
 - Private evaluation scores are logged to the best run from each direction
-- View all results at `localhost:5000` by running `mlflow ui --backend-store-uri sqlite:///mlflow.db`
+- The orchestrator starts a local MLflow server at `localhost:5000` — agents write through HTTP so concurrent writes don't lock the SQLite database
+- View all results at `localhost:5000` while experiments are running, or start the server manually afterward:
+
+```bash
+cd automated_ml_science_team
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 127.0.0.1 --port 5000
+```
 
 ### Human in the loop
 
@@ -148,9 +154,11 @@ Or run a single direction manually — the experiment-runner skill guides any ag
 
 ### 4. View results
 
+While experiments are running, the orchestrator's MLflow server is already serving the UI at `localhost:5000`. To view results after the session:
+
 ```bash
-cd automated_ml_science_team  # mlflow.db lives here — the URI is a relative path
-mlflow ui --backend-store-uri sqlite:///mlflow.db
+cd automated_ml_science_team
+mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns --host 127.0.0.1 --port 5000
 ```
 
 Open `localhost:5000` to see all runs, compare metrics, and inspect training curves. Or generate a static dashboard:
@@ -174,9 +182,9 @@ open dashboard.html
 
 ### Concurrency at scale
 
-The current design has each agent merge its own results to `main` with a `git pull --rebase` + retry. This works for 3 concurrent agents because each touches unique paths (`mlruns/<experiment_id>/` and `research_directions/<name>.md`), so rebases resolve cleanly.
+The current design has each agent merge its own results to `main` locally. This works for 3 concurrent agents because each touches unique paths (`mlruns/<experiment_id>/` and `research_directions/<name>.md`), so merges don't conflict.
 
-Beyond small number of agents this starts to break down — more push collisions, longer retry chains, and a higher chance of two agents trying to register directions at the same moment. The fix is to stop agents from writing to `main` entirely: agents finish on their branch and report back to the orchestrator, which then merges results one at a time in a sequential loop. This serializes all writes to `main` through a single actor, eliminating conflicts at any concurrency level. The trade-off is a small delay in knowledge sharing — agents won't see each other's results until the orchestrator gets around to merging them.
+Beyond a small number of agents this starts to break down — more merge collisions and a higher chance of two agents trying to register directions at the same moment. The fix is to stop agents from writing to `main` entirely: agents finish on their branch and report back to the orchestrator, which then merges results one at a time in a sequential loop. This serializes all writes to `main` through a single actor, eliminating conflicts at any concurrency level. The trade-off is a small delay in knowledge sharing — agents won't see each other's results until the orchestrator gets around to merging them.
 
 ### Shared utilities across agents
 

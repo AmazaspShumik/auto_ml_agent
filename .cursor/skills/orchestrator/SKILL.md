@@ -5,24 +5,25 @@ description: Manage ML experimentation by launching and coordinating concurrent 
 
 # Orchestrator
 
-Launch and manage a rolling pool of up to 3 concurrent research subagents. Each subagent explores a research direction end-to-end. You decide when to launch new subagents and when to stop.
+Run ML experimentation in rolling pool of up to 3 concurrent research subagents. Each subagent explores one research direction end-to-end. Between waves, report results to the user and wait for their decision before continuing.
 
 **You are a manager, not a researcher.** Do not train models or run experiments yourself — that's the subagents' job. You may read `data/train.csv` and `data/val_public_X.csv` to understand the problem, `research_directions/` to track progress, and MLflow to review experiment results — but never read any private validation files (`val_private_*`) or target files (`*_y.csv`).
 
 ## Before Launching Any Subagents
 
-Ensure the MLflow SQLite database exists so all agents log to the same backend:
+Start a local MLflow tracking server so concurrent agents don't fight over SQLite locks:
 
 ```bash
 cd <project root>
-python -c "
-import mlflow
-mlflow.set_tracking_uri('sqlite:///mlflow.db')
-mlflow.tracking.MlflowClient().search_experiments()
-"
+mlflow server \
+  --backend-store-uri sqlite:///mlflow.db \
+  --default-artifact-root ./mlruns \
+  --host 127.0.0.1 --port 5000
 ```
 
-This is idempotent — if `mlflow.db` already exists, it does nothing. Run it once before the first subagent launch.
+Run this as a background process and wait a few seconds for it to be ready. The server serializes all writes to the SQLite database — agents connect via `http://127.0.0.1:5000` instead of writing to the file directly. The UI is also available at that address.
+
+If port 5000 is already in use (from a previous run), the server is already up — skip this step.
 
 ## Launching a Subagent
 
@@ -43,55 +44,67 @@ Example prompt structure:
 
 The subagent decides its own research direction based on prior work. Do not prescribe what it should explore — that's the subagent's judgment call.
 
-## Managing the Pool
+## Research Loop
 
-1. Launch up to 3 subagents concurrently
-2. When a subagent finishes, `git pull` on main to get the latest results
-3. Read the completed direction file and MLflow data
-4. Decide whether to launch a replacement or let the pool shrink
-5. When the pool is empty and you decide not to launch more, stop
+Follow this loop exactly. Do not skip steps.
 
-## Reporting
+### Step 1 — Launch a swarm of agents
 
-After each direction completes, report to the user:
-- Direction name and branch
-- Best `public_val_score` and `private_val_score`
-- Key learnings
-- Current overall best across all completed directions
+Launch up to 3 subagents concurrently. This is a single wave.
 
-Then ask the user if they want to suggest a specific direction to explore next, or let agents continue autonomously. If the user provides a direction, launch a subagent with that direction in its prompt. The subagent still reads the skills and follows all conventions — it just starts with a user-specified direction instead of choosing its own.
+### Step 2 — Collect results
 
-A user-suggested direction does not prevent you from also launching autonomous subagents alongside it, if you have capacity and think other directions are worth exploring.
+When all subagents in the swarm return:
+1. Read `research_directions/` to see updated direction files
+2. Query MLflow for the latest scores
+3. Track the overall best `public_val_score` across all completed directions so far
 
-When you decide to stop, give a final summary:
-- Ranked list of all directions with scores
-- Overall best result (direction name, branch, MLflow run ID)
-- Brief assessment: did results generalize well (public vs private gap)?
-- Suggestion for what the user could try next
+### Step 3 — Report to user
 
-## Dashboard
+Present a summary:
+- Each completed direction: name, branch, best `public_val_score`, `private_val_score`, key learnings
+- Current overall best across all runs
+- Whether this wave of research agents improved on the previous best
+- Total directions completed so far
 
-Before presenting the final summary, generate an interactive HTML dashboard:
+### Step 4 — User checkpoint
+
+After the wave summary, ask the user one of:
+- **Continue** — launch another wave of autonomous agents
+- **Steer** — suggest a specific direction to include in the next wave
+- **Stop** — end experimentation and go to wrap-up
+
+**Wait for the user to respond.** Do not launch the next wave in the same message as the report.
+
+Along with the report, include your recommendation — **continue** or **stop** — based on:
+- **Hard cap reached**: 6 total directions completed → recommend stop
+- **Plateau**: 2 consecutive waves with no improvement over the overall best → recommend stop
+- **Generalization gap**: public scores improving but private scores worsening → recommend stop and flag the concern
+- **Otherwise** → recommend continue
+
+If the user says continue or steer, go back to Step 1. If the user says stop, go to Wrap-up. If the user does not respond within 5 minutes, proceed with your recommendation.
+
+## Wrap-up
+
+This section runs whenever the loop exits — whether the user says stop, the hard cap is reached, or you recommend stopping and the user agrees. **Always execute these steps.**
+
+1. Generate the dashboard:
 
 ```bash
 python src/dashboard.py --output dashboard.html
 ```
 
-This produces a self-contained `dashboard.html` with:
-- **Leaderboard** — directions ranked by best score
-- **Score progression** — how the cumulative best improved over time
-- **Generalization scatter** — public vs. private score per direction (if private scores exist)
-- **Per-direction breakdown** — score distribution within each direction
-
-Open the dashboard in the user's browser:
+2. Open it in the user's browser:
 
 ```bash
 open dashboard.html        # macOS
 xdg-open dashboard.html    # Linux
 ```
 
-Share the file path with the user so they can revisit it later.
+3. Present the final summary:
+   - Ranked list of all directions with public and private scores
+   - Overall best result: direction name, branch, MLflow run ID
+   - Generalization assessment: did results hold up (public vs private gap)?
+   - Suggestion for what the user could try next manually
 
-## When to Stop
-
-Use your judgment. If public validation improves while private validation worsens across directions, flag it to the user. Do not launch more than 6 total directions unless the user explicitly asks for more.
+Share the dashboard file path so the user can revisit it later.

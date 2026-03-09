@@ -27,14 +27,12 @@ python src/submit.py predictions_private.csv <mlflow_run_id>
 
 ```bash
 git checkout main
-git pull --rebase
 git checkout <branch> -- mlruns/
 git add mlruns/ research_directions/
 git commit -m "Merge MLflow runs from direction: <direction-name>"
-git push || (git pull --rebase && git push)
 ```
 
-Use `--rebase` so concurrent merges from other agents don't cause conflicts (each agent touches unique paths under `mlruns/` and `research_directions/`). The `|| retry` handles the case where another agent pushed between your pull and push.
+All agents share the same local repo — no remote push needed. Each agent touches unique paths under `mlruns/` and `research_directions/`, so merges don't conflict.
 
 5. **Update your research direction file** — edit `research_directions/<your-direction>.md` on main:
    - Set status to `completed`
@@ -45,7 +43,7 @@ Use `--rebase` so concurrent merges from other agents don't cause conflicts (eac
      - Surprising findings or unexpected behavior
      - What you'd try next if continuing this direction
      - References to papers, blog posts, or techniques that were useful
-   - Commit and push with the same retry pattern: `git push || (git pull --rebase && git push)`
+   - Commit on main
 
 6. **Return to your branch and finalize it** — switch back, commit and push any remaining files (predictions, load scripts, etc.) so the branch is a complete archive:
 
@@ -53,7 +51,6 @@ Use `--rebase` so concurrent merges from other agents don't cause conflicts (eac
 git checkout <branch>
 git add -A
 git commit -m "Finalize branch archive: predictions and load scripts"
-git push
 ```
 
 These commits stay on the branch only — they are never merged to main.

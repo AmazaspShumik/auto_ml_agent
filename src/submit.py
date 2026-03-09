@@ -7,6 +7,7 @@ Usage:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -20,6 +21,9 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 
 def _get_tracking_uri() -> str:
+    uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if uri:
+        return uri
     db_path = PROJECT_ROOT / "mlflow.db"
     if not db_path.exists():
         raise FileNotFoundError(
