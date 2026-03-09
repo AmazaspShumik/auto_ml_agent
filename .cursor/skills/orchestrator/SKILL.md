@@ -9,7 +9,9 @@ Launch and manage a rolling pool of up to 3 concurrent research subagents. Each 
 
 ## Launching a Subagent
 
-Each subagent is a `generalPurpose` Task. Its prompt must include:
+Each subagent is a `generalPurpose` Task. Launch subagents using the default (most capable) model — these tasks require deep ML reasoning and multi-step experimentation.
+
+Its prompt must include:
 - The project working directory so it can find all files
 - Where to find its instructions and prior work
 - What to report back when done
