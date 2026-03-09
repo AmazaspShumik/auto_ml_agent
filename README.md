@@ -5,23 +5,33 @@ A template for autonomous ML experimentation using Cursor AI agents. Small agent
 ## How It Works
 
 ```
-                         main branch (knowledge base)
-                        ┌─────────────────────────────────┐
-                        │  research_directions/            │
-                        │    ├── deeper-trees.md           │
-                        │    ├── feature-interactions.md   │
-                        │    └── ...                       │
-                        │  mlruns/  (model artifacts)      │
-                        │  src/    (evaluation scripts)    │
-                        └──────┬──────────┬────────────────┘
-                               │          │
-                    ┌──────────┘          └──────────┐
-                    ▼                                ▼
-            exp/deeper-trees              exp/feature-interactions
-            (Subagent 1)                  (Subagent 2)
-            - trains models               - trains models
-            - logs to MLflow              - logs to MLflow
-            - submits results             - submits results
+                          main branch (knowledge base)
+                         ┌─────────────────────────────────┐
+                         │  research_directions/            │
+                         │    ├── deeper-trees.md           │
+                         │    ├── feature-interactions.md   │
+                         │    └── ...                       │
+                         │  mlruns/  (model artifacts)      │
+                         │  src/    (evaluation scripts)    │
+                         └──────────────┬──────────────────┘
+                                        │
+                                   reads│& merges
+                                        │
+                                ┌───────▼────────┐
+                    ┌───────────│  Orchestrator   │───────────┐
+                    │           │  (main agent)   │           │
+                    │           └────────┬────────┘           │
+                    │ launches           │launches            │ launches
+                    ▼                    ▼                    ▼
+          exp/deeper-trees    exp/feature-interactions    exp/...
+          (Subagent 1)        (Subagent 2)               (Subagent 3)
+          - trains models     - trains models             - trains models
+          - logs to MLflow    - logs to MLflow            - logs to MLflow
+          - submits results   - submits results           - submits results
+                    │                    │                    │
+                    └────────────────────┼────────────────────┘
+                                        │
+                              merge results to main
 ```
 
 ### The orchestrator launches research agents
@@ -166,7 +176,7 @@ open dashboard.html
 
 The current design has each agent merge its own results to `main` with a `git pull --rebase` + retry. This works for 3 concurrent agents because each touches unique paths (`mlruns/<experiment_id>/` and `research_directions/<name>.md`), so rebases resolve cleanly.
 
-Beyond ~5 agents this starts to break down — more push collisions, longer retry chains, and a higher chance of two agents trying to register directions at the same moment. The fix is to stop agents from writing to `main` entirely: agents finish on their branch and report back to the orchestrator, which then merges results one at a time in a sequential loop. This serializes all writes to `main` through a single actor, eliminating conflicts at any concurrency level. The trade-off is a small delay in knowledge sharing — agents won't see each other's results until the orchestrator gets around to merging them.
+Beyond small number of agents this starts to break down — more push collisions, longer retry chains, and a higher chance of two agents trying to register directions at the same moment. The fix is to stop agents from writing to `main` entirely: agents finish on their branch and report back to the orchestrator, which then merges results one at a time in a sequential loop. This serializes all writes to `main` through a single actor, eliminating conflicts at any concurrency level. The trade-off is a small delay in knowledge sharing — agents won't see each other's results until the orchestrator gets around to merging them.
 
 ### Shared utilities across agents
 
