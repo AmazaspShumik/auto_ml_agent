@@ -25,17 +25,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _query_runs() -> list[dict]:
-    """Fetch all finished runs from the default MLflow experiment."""
+    """Fetch all finished runs from all MLflow experiments."""
     client = mlflow.tracking.MlflowClient()
-    experiment = client.get_experiment_by_name("Default")
-    if experiment is None:
-        experiments = client.search_experiments()
-        if not experiments:
-            return []
-        experiment = experiments[0]
+    experiments = client.search_experiments()
+    if not experiments:
+        return []
+
+    experiment_ids = [e.experiment_id for e in experiments]
 
     runs = client.search_runs(
-        experiment_ids=[experiment.experiment_id],
+        experiment_ids=experiment_ids,
         filter_string="attributes.status = 'FINISHED'",
         order_by=["attributes.start_time ASC"],
     )
@@ -245,9 +244,19 @@ def _build_direction_breakdown(runs: list[dict]) -> go.Figure:
     return fig
 
 
+def _get_tracking_uri() -> str:
+    db_path = PROJECT_ROOT / "mlflow.db"
+    if not db_path.exists():
+        raise FileNotFoundError(
+            f"MLflow database not found at {db_path}. "
+            "The orchestrator must initialize it before any experiments run."
+        )
+    return f"sqlite:///{db_path}"
+
+
 def generate_dashboard(output_path: Path) -> Path:
     """Query MLflow and write a self-contained HTML dashboard."""
-    mlflow.set_tracking_uri(str(PROJECT_ROOT / "mlruns"))
+    mlflow.set_tracking_uri(_get_tracking_uri())
 
     runs = _query_runs()
     if not runs:

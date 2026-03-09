@@ -36,6 +36,19 @@ Explore a research direction through one or more MLflow runs. You have full free
 
 Registering your direction on main before experiments begin is critical — it signals your intent to other concurrent agents.
 
+## MLflow Tracking URI
+
+All agents must use the SQLite backend. Set this **before any MLflow calls** in every script:
+
+```python
+import mlflow
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+```
+
+The path is relative to the project root — make sure your working directory is the project root when running experiments. The orchestrator creates `mlflow.db` before launching subagents, so it will already exist.
+
+The SQLite database is the source of truth for run metadata (metrics, params, tags). MLflow still writes model artifacts to `mlruns/` on disk — that directory must be preserved and merged to main via the submit-experiment workflow.
+
 ## Logging Conventions
 
 Every MLflow run MUST have these tags:
@@ -49,10 +62,18 @@ For example, you decide to try a convolutional neural network because the data h
 Every MLflow run MUST have these metrics:
 `public_val_score` - validation metric computed on the public validation set. See the Evaluation section below for details.
 
-Every run SHOULD log (when applicable):
+Every MLflow run MUST log:
 - Hyperparameters as params
+- The trained model as an artifact via the appropriate `mlflow.<framework>.log_model()` flavor
+
+Every run SHOULD log (when applicable):
 - Per-step train/validation metrics for iterative models
-- Model artifact
+
+### Model Logging
+
+Every run must persist its trained model so it can be loaded later for prediction, ensembling, or submission — never rely on retraining to reproduce results. Use the appropriate `mlflow.<framework>.log_model()` flavor and always use `"model"` as the artifact path.
+
+For composite models (stacking, ensembles), save each component as a separate artifact in the run (base models, meta-learner, blend weights, etc.) and implement a loading/prediction function on your branch that reassembles them. The branch code is the recipe; the MLflow artifacts are the ingredients.
 
 
 ## Evaluation

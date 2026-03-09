@@ -16,7 +16,7 @@ Finalize a research direction: run private evaluation on your best candidate, lo
 ## Instructions
 
 1. Pick your best run — query MLflow for the run with the highest `public_val_score` on this branch
-2. Generate private predictions — load your best model and produce predictions for `data/val_private_X.csv`
+2. Generate private predictions — load the saved model artifact from your best run and produce predictions for `data/val_private_X.csv`.
 3. Run private evaluation — `submit.py` evaluates against private targets and logs `private_val_score` to the best MLflow run:
 
 ```bash
@@ -27,10 +27,14 @@ python src/submit.py predictions_private.csv <mlflow_run_id>
 
 ```bash
 git checkout main
-git pull
+git pull --rebase
 git checkout <branch> -- mlruns/
+git add mlruns/ research_directions/
 git commit -m "Merge MLflow runs from direction: <direction-name>"
+git push || (git pull --rebase && git push)
 ```
+
+Use `--rebase` so concurrent merges from other agents don't cause conflicts (each agent touches unique paths under `mlruns/` and `research_directions/`). The `|| retry` handles the case where another agent pushed between your pull and push.
 
 5. **Update your research direction file** — edit `research_directions/<your-direction>.md` on main:
    - Set status to `completed`
@@ -41,15 +45,28 @@ git commit -m "Merge MLflow runs from direction: <direction-name>"
      - Surprising findings or unexpected behavior
      - What you'd try next if continuing this direction
      - References to papers, blog posts, or techniques that were useful
-   - Commit and push
+   - Commit and push with the same retry pattern: `git push || (git pull --rebase && git push)`
 
-6. **Do not delete the branch** — it stays as an archive of the code that produced these results.
+6. **Return to your branch and finalize it** — switch back, commit and push any remaining files (predictions, load scripts, etc.) so the branch is a complete archive:
+
+```bash
+git checkout <branch>
+git add -A
+git commit -m "Finalize branch archive: predictions and load scripts"
+git push
+```
+
+These commits stay on the branch only — they are never merged to main.
+
+7. **Do not delete the branch** — it stays as an archive of the code that produced these results.
 
 ## What Lands on Main
 
-- All MLflow runs from this branch (including `private_val_score` on the best run)
-- Updated direction file with results, learnings, and references
-- Nothing else — training code stays on the branch
+Only these paths may be committed to main:
+- `mlruns/` — all MLflow runs from this branch (including `private_val_score` on the best run)
+- `research_directions/<your-direction>.md` — updated direction file with results, learnings, and references
+
+**Nothing else.** No training scripts, no prediction CSVs, no model files, no `catboost_info/`, no `experiments/` — all of that stays on the branch. Before committing to main, run `git status` and verify only `mlruns/` and `research_directions/` are staged.
 
 ## Why This Matters
 
@@ -62,3 +79,4 @@ Main is the shared knowledge base for all agents. Other agents — potentially r
 - Never call this more than once per branch
 - You must be on a feature branch, not main
 - The best run must have a `public_val_score` logged in MLflow
+- The best run must have a saved model artifact — never retrain to generate private predictions

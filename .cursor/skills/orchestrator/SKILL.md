@@ -9,6 +9,21 @@ Launch and manage a rolling pool of up to 3 concurrent research subagents. Each 
 
 **You are a manager, not a researcher.** Do not train models or run experiments yourself — that's the subagents' job. You may read `data/train.csv` and `data/val_public_X.csv` to understand the problem, `research_directions/` to track progress, and MLflow to review experiment results — but never read any private validation files (`val_private_*`) or target files (`*_y.csv`).
 
+## Before Launching Any Subagents
+
+Ensure the MLflow SQLite database exists so all agents log to the same backend:
+
+```bash
+cd <project root>
+python -c "
+import mlflow
+mlflow.set_tracking_uri('sqlite:///mlflow.db')
+mlflow.tracking.MlflowClient().search_experiments()
+"
+```
+
+This is idempotent — if `mlflow.db` already exists, it does nothing. Run it once before the first subagent launch.
+
 ## Launching a Subagent
 
 Each subagent is a `generalPurpose` Task. Launch subagents using the default (most capable) model — these tasks require deep ML reasoning and multi-step experimentation.

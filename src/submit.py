@@ -19,6 +19,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 
+def _get_tracking_uri() -> str:
+    db_path = PROJECT_ROOT / "mlflow.db"
+    if not db_path.exists():
+        raise FileNotFoundError(
+            f"MLflow database not found at {db_path}. "
+            "The orchestrator must initialize it before any experiments run."
+        )
+    return f"sqlite:///{db_path}"
+
+
 def main() -> None:
     if len(sys.argv) < 3:
         print("Usage: python src/submit.py <predictions.csv> <mlflow_run_id>", file=sys.stderr)
@@ -34,6 +44,7 @@ def main() -> None:
     preds = pd.read_csv(preds_path).squeeze("columns").values
     private_score = _evaluate_private(preds)
 
+    mlflow.set_tracking_uri(_get_tracking_uri())
     with mlflow.start_run(run_id=run_id):
         mlflow.log_metric("private_val_score", private_score)
 

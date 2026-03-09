@@ -4,3 +4,9 @@ __pycache__/
 
 outputs/*
 !outputs/.gitkeep
+
+# Auto-generated runtime artifacts
+catboost_info/
+lightgbm_info/
+dashboard.html
+mlflow.db
